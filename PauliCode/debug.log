@@ -8233,3 +8233,19 @@ AFC is enabled with max remote calls: 10.
 HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:streamGenerateContent?alt=sse "HTTP/1.1 403 Forbidden"
 "POST /ai-chat-stream/ HTTP/1.1" 200 191
 "GET /get-usage-stats/ HTTP/1.1" 200 242
+Watching for file changes with StatReloader
+"GET / HTTP/1.1" 200 23459
+"GET /static/img/PCodeLogo.svg HTTP/1.1" 200 12486
+"GET /static/img/favicon.ico HTTP/1.1" 200 4286
+"GET / HTTP/1.1" 200 23459
+"GET /static/img/PCodeLogo.svg HTTP/1.1" 200 12486
+"GET /static/img/favicon.ico HTTP/1.1" 200 4286
+"GET /signup/ HTTP/1.1" 200 21833
+"GET /static/js/register.js HTTP/1.1" 200 10525
+Verification code sent to karl.satsat.7@gmail.com for signup
+"POST /send-verification-code/ HTTP/1.1" 200 54
+"GET /signup/ HTTP/1.1" 200 21833
+"GET /static/img/PCodeLogo.svg HTTP/1.1" 304 0
+"GET /static/img/favicon.ico HTTP/1.1" 304 0
+Verification code sent to karl.satsat20@gmail.com for signup
+"POST /send-verification-code/ HTTP/1.1" 200 54
