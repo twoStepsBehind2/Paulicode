@@ -11,22 +11,28 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.safestring import mark_safe
 from django.core.files.storage import default_storage
 from django.conf import settings
-
-# Generate 6-digit verification code
-import random
-
-# Authentication & Security
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth import get_user_model, login, logout, authenticate
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.hashers import make_password, check_password
 from django.views.decorators.csrf import csrf_exempt
+
+# Admin Dashboard
+from django.contrib.admin.views.decorators import staff_member_required
+import django
+import logging
+from django.db.models import Count, Sum
+
+# Generate 6-digit verification code
+import random
 
 # Database
 from django.db import IntegrityError
 from django.db.models import Q, Sum, Max, F, Exists, OuterRef, Count, Case, When, IntegerField
 
 # Models
-from .models import User, Class, Problem, Enrollment, ProblemTestCase, Submission, ChatHistory, ProblemResource, EmailVerification
+from .models import User, Class, Problem, Enrollment, ProblemTestCase, Submission, ChatHistory, ProblemResource, EmailVerification, Exam, ExamSession, CTFChallenge, CTFSolve, ActivityLog
+
+User = get_user_model()
 
 # Email imports
 from django.core.mail import send_mail
@@ -60,6 +66,149 @@ from .rate_limiter import (
 )
 from .rate_limit_config import RATE_LIMITS
 
+
+# ---------------- ADMINDASHBOARD ---------------- #
+
+@staff_member_required
+def your_exams_view(request):
+    now = timezone.now()
+    exams = Exam.objects.order_by('start_time')
+    return render(request, 'Admin/exams.html', {'exams': exams})
+
+
+@staff_member_required
+def your_riskflags_view(request):
+    flags = ExamSession.objects.select_related('student', 'exam').order_by('-risk_level')
+    return render(request, 'Admin/risk_flags.html', {'flags': flags})
+
+
+@staff_member_required
+def your_activity_view(request):
+    activity = ActivityLog.objects.select_related('user').order_by('-timestamp')[:50]
+    return render(request, 'Admin/activity.html', {'activity': activity})
+
+logger = logging.getLogger(__name__)
+ 
+ 
+@staff_member_required
+def admin_dashboard(request):
+    """
+    Admin-only overview dashboard.
+    Requires the user to have is_staff=True (all Teachers get this automatically).
+    """
+    now = timezone.now()
+ 
+    # ── Students ──────────────────────────────────────────────────────────────
+    # FIX: removed the duplicate `role='Student'` lines; use user_type throughout
+    total_students = User.objects.filter(user_type='Student').count()
+    one_week_ago   = now - timezone.timedelta(days=7)
+    new_students   = User.objects.filter(
+        user_type='Student',
+        date_joined__gte=one_week_ago
+    ).count()
+ 
+    # ── Exams ─────────────────────────────────────────────────────────────────
+    active_exams_qs = Exam.objects.filter(start_time__lte=now, end_time__gte=now)
+    upcoming_qs     = Exam.objects.filter(start_time__gt=now).order_by('start_time')[:2]
+ 
+    exams_display = []
+    for exam in list(active_exams_qs) + list(upcoming_qs):
+        exams_display.append({
+            'title':       exam.title,
+            'is_live':     exam.start_time <= now <= exam.end_time,
+            'taker_count': ExamSession.objects.filter(exam=exam, submitted=False).count(),
+            'start_time':  exam.start_time.strftime('%I:%M %p'),
+        })
+ 
+    today_end          = now.replace(hour=23, minute=59, second=59)
+    exams_ending_today = active_exams_qs.filter(end_time__lte=today_end).count()
+ 
+    # ── Risk flags ────────────────────────────────────────────────────────────
+    # FIX: capture count BEFORE slicing — calling .count() on a sliced queryset
+    # raises TypeError in Django.
+    risk_sessions_qs  = (
+        ExamSession.objects
+        .filter(exam__in=active_exams_qs, risk_level__in=['high', 'medium', 'low'])
+        .select_related('student', 'exam')
+        .order_by('-risk_level')
+    )
+    risk_flags_count = risk_sessions_qs.count()   # count before slice
+    risk_sessions    = risk_sessions_qs[:10]       # then slice for display
+ 
+    new_flags = ExamSession.objects.filter(
+        risk_level='high',
+        flagged_at__gte=now - timezone.timedelta(days=1)
+    ).count()
+ 
+    # ── CTF ───────────────────────────────────────────────────────────────────
+    total_ctf_solves = CTFSolve.objects.count()
+    ctf_solves_today = CTFSolve.objects.filter(solved_at__date=now.date()).count()
+ 
+    # FIX: replaced non-existent `.annotate_solve_count()` custom manager method
+    # with a standard Django annotation using Count on the reverse relation.
+    # CTFSolve has a related_name='solves' on its challenge FK, so we use 'solves'.
+    ctf_challenges = (
+        CTFChallenge.objects
+        .filter(is_active=True)
+        .annotate(solve_count=Count('solves'))
+        [:5]
+    )
+ 
+    # ── Leaderboard ───────────────────────────────────────────────────────────
+    # FIX: removed the duplicate queryset lines (two separate statements with no
+    # operator between them caused a SyntaxError).  Only one filter is needed.
+    leaderboard_qs = (
+        User.objects
+        .filter(user_type='Student')
+        .annotate(total_xp=Sum('xp_grants__points'))   # related_name='xp_grants' from XPGrant
+        .order_by('-total_xp')[:5]
+    )
+ 
+    first = leaderboard_qs.first()
+    max_xp = (first.total_xp or 1) if first else 1
+    leaderboard = [
+        {
+            'user':       u,
+            'xp_percent': round((u.total_xp or 0) / max(max_xp, 1) * 100),
+        }
+        for u in leaderboard_qs
+    ]
+ 
+    # ── Recent activity ───────────────────────────────────────────────────────
+    # NOTE: ActivityLog now uses `event_type` instead of `type` to avoid
+    # shadowing Python's built-in type().  Update the template accordingly
+    # ({{ event.event_type }} instead of {{ event.type }}).
+    recent_activity = (
+        ActivityLog.objects
+        .select_related('user')
+        .order_by('-timestamp')[:8]
+    )
+ 
+    # ── Server info ───────────────────────────────────────────────────────────
+    ngrok_url = os.environ.get('NGROK_URL', '')
+ 
+    context = {
+        'total_students':         total_students,
+        'new_students_this_week': new_students,
+        'active_exams':           exams_display,
+        'active_exams_count':     active_exams_qs.count(),
+        'exams_ending_today':     exams_ending_today,
+        'risk_flags':             risk_sessions,
+        'risk_flags_count':       risk_flags_count,   # FIX: pre-sliced count
+        'new_flags':              new_flags,
+        'total_ctf_solves':       total_ctf_solves,
+        'ctf_solves_today':       ctf_solves_today,
+        'ctf_challenges':         ctf_challenges,
+        'leaderboard':            leaderboard,
+        'recent_activity':        recent_activity,
+        'ngrok_url':              ngrok_url,
+        'django_version':         django.get_version(),
+    }
+ 
+    # FIX: removed the duplicate return statement; one render call with the
+    # correct template path.  Adjust 'Admin/admin.html' to wherever your
+    # template actually lives.
+    return render(request, 'Admin/admin.html', context)
 
 # ---------------- LOGIN & DASHBOARD ---------------- #
 

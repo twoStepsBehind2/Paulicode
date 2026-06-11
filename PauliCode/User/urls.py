@@ -3,6 +3,16 @@ from . import views
 
 urlpatterns = [
 
+
+    #--------------Admin Dashboard---------------------------#
+    
+    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    # Other URLs the template links to:
+    path('admin-dashboard/exams/',      views.your_exams_view,     name='admin_exams'),
+    path('admin-dashboard/risk-flags/', views.your_riskflags_view, name='admin_risk_flags'),
+    path('admin-dashboard/activity/',   views.your_activity_view,  name='admin_activity'),
+          
+
     #--------------Portal---------------------------#
     path('', views.index, name='index'),
     path('login/', views.login_view, name='login'),

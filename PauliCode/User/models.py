@@ -3,9 +3,61 @@
 
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.conf import settings # Import settings
 from django.utils import timezone
 import os
 
+
+# ============================================
+# Admin Dashboard
+# ============================================
+
+class Exam(models.Model):
+    title      = models.CharField(max_length=200)
+    start_time = models.DateTimeField()
+    end_time   = models.DateTimeField()
+    instructor = models.ForeignKey(User, on_delete=models.CASCADE)
+    instructor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+class ExamSession(models.Model):
+    exam        = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    student     = models.ForeignKey(User, on_delete=models.CASCADE)
+    student     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    submitted   = models.BooleanField(default=False)
+    tab_switches = models.IntegerField(default=0)
+    risk_level  = models.CharField(
+        max_length=10,
+        choices=[('low','Low'), ('medium','Medium'), ('high','High')],
+        default='low'
+    )
+    flagged_at  = models.DateTimeField(null=True, blank=True)
+
+class CTFChallenge(models.Model):
+    title       = models.CharField(max_length=200)
+    is_active   = models.BooleanField(default=True)
+    icon        = models.CharField(max_length=50, default='lock')        # Tabler icon name
+    color_class = models.CharField(max_length=20, default='blue')        # blue/amber/teal/coral/purple
+
+class CTFSolve(models.Model):
+    challenge = models.ForeignKey(CTFChallenge, on_delete=models.CASCADE)
+    student   = models.ForeignKey(User, on_delete=models.CASCADE)
+    challenge = models.ForeignKey(CTFChallenge, on_delete=models.CASCADE) # This is fine, CTFChallenge is defined above
+    student   = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    solved_at = models.DateTimeField(auto_now_add=True)
+
+class ActivityLog(models.Model):
+    TYPE_CHOICES = [('flag','Flag'), ('solve','Solve'), ('join','Join'), ('exam','Exam')]
+    user        = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    type        = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    description = models.TextField()
+    timestamp   = models.DateTimeField(auto_now_add=True)
+
+class XPGrant(models.Model):
+    user      = models.ForeignKey(User, on_delete=models.CASCADE)
+    points    = models.IntegerField()
+    granted_at = models.DateTimeField(auto_now_add=True)
+    user      = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
 # ============================================
 # Custom User Manager

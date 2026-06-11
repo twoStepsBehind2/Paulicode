@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Paulicode — Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+  <style>
+    /* FIX: @import must be the FIRST statement in a <style> block.
+       Moving it here so the browser doesn't silently ignore it. */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f4;
+      --surface: #ffffff;
+      --surface2: #f1f0ef;
+      --border: rgba(0,0,0,0.1);
+      --border-md: rgba(0,0,0,0.18);
+      --text: #1c1c1a;
+      --text-muted: #6b6b68;
+      --text-hint: #9b9b97;
+      --purple: #534AB7;
+      --purple-light: #EEEDFE;
+      --purple-mid: #7F77DD;
+      --green: #3B6D11;
+      --green-light: #EAF3DE;
+      --green-mid: #639922;
+      --amber: #854F0B;
+      --amber-light: #FAEEDA;
+      --amber-mid: #BA7517;
+      --red: #A32D2D;
+      --red-light: #FCEBEB;
+      --red-mid: #E24B4A;
+      --blue: #185FA5;
+      --blue-light: #E6F1FB;
+      --teal: #0F6E56;
+      --teal-light: #E1F5EE;
+      --coral: #993C1D;
+      --coral-light: #FAECE7;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --sidebar-w: 196px;
+      --topbar-h: 52px;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: var(--topbar-h);
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.25rem;
+      z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+    .logo-icon {
+      width: 30px; height: 30px; border-radius: var(--radius-md);
+      background: var(--purple); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; letter-spacing: -0.5px;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .server-status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-muted); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-mid); flex-shrink: 0; }
+    .status-dot.offline { background: var(--red-mid); }
+    .admin-pill {
+      font-size: 12px; padding: 4px 12px; border-radius: 20px;
+      background: var(--purple-light); color: var(--purple);
+      font-weight: 500; border: 0.5px solid rgba(83,74,183,0.2);
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      margin-top: var(--topbar-h);
+      min-height: calc(100vh - var(--topbar-h));
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      top: var(--topbar-h); bottom: 0; left: 0;
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 0.5px solid var(--border);
+      overflow-y: auto;
+      padding: 0.75rem 0 2rem;
+    }
+    .nav-section {
+      font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text-hint); padding: 14px 1.1rem 5px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 1.1rem; font-size: 13px; color: var(--text-muted);
+      cursor: pointer; transition: background 0.12s, color 0.12s;
+      border-radius: 0; text-decoration: none;
+    }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { color: var(--purple); background: var(--purple-light); font-weight: 500; }
+
+    /* ── Main content ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      padding: 1.5rem;
+      max-width: 1200px;
+    }
+    .page-header { margin-bottom: 1.25rem; }
+    .page-title { font-size: 20px; font-weight: 600; margin-bottom: 3px; }
+    .page-sub { font-size: 13px; color: var(--text-muted); }
+
+    /* ── Metric cards ── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px; margin-bottom: 1.25rem;
+    }
+    .metric {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1rem 1.1rem;
+    }
+    .metric-label {
+      font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .metric-label i { font-size: 14px; }
+    .metric-val { font-size: 26px; font-weight: 600; line-height: 1; margin-bottom: 6px; }
+    .metric-delta { font-size: 11px; color: var(--green); }
+    .metric-delta.down { color: var(--red-mid); }
+
+    /* ── Generic card ── */
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.1rem;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .card-title { font-size: 13px; font-weight: 500; }
+
+    /* ── Badges ── */
+    .badge {
+      font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500;
+    }
+    .badge-info    { background: var(--blue-light);   color: var(--blue); }
+    .badge-success { background: var(--green-light);  color: var(--green); }
+    .badge-warn    { background: var(--amber-light);  color: var(--amber); }
+    .badge-danger  { background: var(--red-light);    color: var(--red); }
+    .badge-purple  { background: var(--purple-light); color: var(--purple); }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      text-align: left; color: var(--text-muted); font-weight: 400;
+      padding: 0 0 8px; border-bottom: 0.5px solid var(--border);
+    }
+    td { padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Risk dot ── */
+    .risk-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .risk-high { background: var(--red-mid); }
+    .risk-med  { background: var(--amber-mid); }
+    .risk-low  { background: var(--green-mid); }
+
+    /* ── XP bar ── */
+    .xp-bar { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; width: 80px; }
+    .xp-fill { height: 100%; background: var(--purple); border-radius: 3px; }
+
+    /* ── CTF items ── */
+    .ctf-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 0.5px solid var(--border);
+    }
+    .ctf-item:last-child { border-bottom: none; }
+    .ctf-icon {
+      width: 30px; height: 30px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+    }
+    .ctf-blue   { background: var(--blue-light);   color: var(--blue); }
+    .ctf-amber  { background: var(--amber-light);  color: var(--amber); }
+    .ctf-teal   { background: var(--teal-light);   color: var(--teal); }
+    .ctf-coral  { background: var(--coral-light);  color: var(--coral); }
+    .ctf-purple { background: var(--purple-light); color: var(--purple); }
+
+    /* ── Exam rows ── */
+    .exam-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 0; border-bottom: 0.5px solid var(--border); font-size: 12px;
+    }
+    .exam-row:last-child { border-bottom: none; }
+
+    /* ── Button small ── */
+    .btn-sm {
+      font-size: 11px; padding: 4px 10px; border-radius: var(--radius-md);
+      border: 0.5px solid var(--border-md); background: transparent;
+      color: var(--text-muted); cursor: pointer; font-family: var(--font);
+      text-decoration: none;
+    }
+    .btn-sm:hover { background: var(--surface2); color: var(--text); }
+
+    /* ── Server info rows ── */
+    .srv-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 12px;
+    }
+    .srv-row:last-child { border-bottom: none; }
+    .srv-key { color: var(--text-muted); }
+    .mono { font-family: var(--font-mono); font-size: 11px; }
+
+    /* ── Grid rows ── */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+    /* ── Activity feed ── */
+    .activity-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 12px;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+      margin-top: 1px;
+    }
+    .activity-time { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .row2, .row3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 1rem; }
+      .layout { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-icon">P</div>
+    Paulicode
+  </div>
+  <div class="topbar-right">
+    <div class="server-status">
+      <span class="status-dot" id="srv-dot"></span>
+      <span id="srv-label">Server online · ngrok active</span>
+    </div>
+    <span class="admin-pill">Admin</span>
+  </div>
+</header>
+
+<!-- ── Layout ── -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="nav-section">General</div>
+    <a class="nav-item active" href="#overview" data-page="overview">
+      <i class="ti ti-layout-dashboard"></i> Overview
+    </a>
+    <a class="nav-item" href="#students" data-page="students">
+      <i class="ti ti-users"></i> Students
+    </a>
+    <a class="nav-item" href="#instructors" data-page="instructors">
+      <i class="ti ti-user-check"></i> Instructors
+    </a>
+    <div class="nav-section">Platform</div>
+    <a class="nav-item" href="#exams" data-page="exams">
+      <i class="ti ti-file-description"></i> Exams
+    </a>
+    <a class="nav-item" href="#ctf" data-page="ctf">
+      <i class="ti ti-shield"></i> CTF Challenges
+    </a>
+    <a class="nav-item" href="#analytics" data-page="analytics">
+      <i class="ti ti-chart-bar"></i> Analytics
+    </a>
+    <div class="nav-section">System</div>
+    <a class="nav-item" href="#server" data-page="server">
+      <i class="ti ti-server"></i> Server
+    </a>
+    <a class="nav-item" href="#settings" data-page="settings">
+      <i class="ti ti-settings"></i> Settings
+    </a>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <div class="page-title">Overview</div>
+      <div class="page-sub">St. Paul University Surigao — IT Department</div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label"><i class="ti ti-users"></i> Total Students</div>
+        <div class="metric-val" id="stat-students">{{ total_students }}</div>
+        <div class="metric-delta" id="stat-students-delta">↑ {{ new_students_this_week }} this week</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label"><i class="ti ti-file-description"></i> Active Exams</div>
+        <div class="metric-val" id="stat-exams">{{ active_exams_count }}</div>
+        <div class="metric-delta">{{ exams_ending_today }} ending today</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label"><i class="ti ti-shield"></i> CTF Solves</div>
+        <div class="metric-val" id="stat-solves">{{ total_ctf_solves }}</div>
+        <div class="metric-delta">↑ {{ ctf_solves_today }} today</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label"><i class="ti ti-alert-triangle"></i> Risk Flags</div>
+        <div class="metric-val" id="stat-flags">{{ risk_flags_count }}</div>
+        <div class="metric-delta down" id="stat-flags-delta">↑ {{ new_flags }} since yesterday</div>
+      </div>
+    </div>
+
+    <!-- Row 2: Active Exams + Risk Flags -->
+    <div class="row2">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Active Exams</span>
+          <a href="{% url 'admin_exams' %}" class="btn-sm">View all →</a>
+        </div>
+        {% for exam in active_exams %}
+        <div class="exam-row">
+          <div>
+            <div style="font-weight:500;font-size:12px">{{ exam.title }}</div>
+            <div style="color:var(--text-muted);font-size:11px;margin-top:2px">
+              {% if exam.is_live %}{{ exam.taker_count }} taking now{% else %}Starts {{ exam.start_time }}{% endif %}
+            </div>
+          </div>
+          {% if exam.is_live %}
+            <span class="badge badge-danger">Live</span>
+          {% else %}
+            <span class="badge badge-warn">Upcoming</span>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p style="font-size:12px;color:var(--text-hint);padding:1rem 0;text-align:center">No active exams right now.</p>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Risk Flags — Ongoing</span>
+          <a href="{% url 'admin_risk_flags' %}" class="btn-sm">View all →</a>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Student</th><th>Exam</th><th>Risk</th><th>Tab switches</th></tr>
+          </thead>
+          <tbody>
+            {% for flag in risk_flags %}
+            <tr>
+              <td>{{ flag.student.get_full_name }}</td>
+              <td>{{ flag.exam.title }}</td>
+              <td>
+                <span class="risk-dot
+                  {% if flag.risk_level == 'high' %}risk-high
+                  {% elif flag.risk_level == 'medium' %}risk-med
+                  {% else %}risk-low{% endif %}">
+                </span>
+                {{ flag.risk_level|capfirst }}
+              </td>
+              <td>{{ flag.tab_switches }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="color:var(--text-hint);text-align:center;padding:1rem 0">No flags right now.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Row 3: Leaderboard + CTF + Server -->
+    <div class="row3">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Top Students</span>
+          <span class="badge badge-purple">XP Leaderboard</span>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>XP</th></tr></thead>
+          <tbody>
+            {% for entry in leaderboard %}
+            <tr>
+              <td style="color:var(--text-hint)">{{ forloop.counter }}</td>
+              <td>{{ entry.user.get_full_name }}</td>
+              <td>
+                <div class="xp-bar">
+                  <div class="xp-fill" style="width:{{ entry.xp_percent }}%"></div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" style="color:var(--text-hint);text-align:center;padding:1rem 0">No data yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">CTF Challenges</span>
+          <span class="badge badge-success">Active</span>
+        </div>
+        {% for challenge in ctf_challenges %}
+        <div class="ctf-item">
+          <div class="ctf-icon ctf-{{ challenge.color_class }}">
+            <i class="ti ti-{{ challenge.icon }}"></i>
+          </div>
+          <div>
+            <div style="font-weight:500;font-size:12px">{{ challenge.title }}</div>
+            <!-- FIX: solve_count now comes from .annotate(solve_count=Count('solves')) in the view -->
+            <div style="color:var(--text-muted);font-size:11px">{{ challenge.solve_count }} solves</div>
+          </div>
+        </div>
+        {% empty %}
+        <p style="font-size:12px;color:var(--text-hint);padding:1rem 0;text-align:center">No active challenges.</p>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Server Info</span>
+          <span class="badge badge-success" id="srv-badge">Online</span>
+        </div>
+        <div class="srv-row"><span class="srv-key">Host</span><span>PythonAnywhere</span></div>
+        <div class="srv-row"><span class="srv-key">Port</span><span class="mono">8000</span></div>
+        <div class="srv-row"><span class="srv-key">Tunnel</span><span class="mono">{{ ngrok_url|default:"—" }}</span></div>
+        <div class="srv-row"><span class="srv-key">Framework</span><span>Django {{ django_version }}</span></div>
+        <div class="srv-row"><span class="srv-key">Database</span><span>MySQL</span></div>
+        <div class="srv-row"><span class="srv-key">Uptime</span><span id="uptime-counter">—</span></div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card" style="margin-top:10px">
+      <div class="card-header">
+        <span class="card-title">Recent Activity</span>
+        <a href="{% url 'admin_activity' %}" class="btn-sm">View all →</a>
+      </div>
+      {% for event in recent_activity %}
+      <div class="activity-item">
+        <!--
+          FIX: ActivityLog field renamed from `type` to `event_type` to avoid
+          shadowing Python's built-in type(). Updated all references below.
+        -->
+        <div class="activity-icon
+          {% if event.event_type == 'flag' %}badge-danger
+          {% elif event.event_type == 'solve' %}badge-success
+          {% elif event.event_type == 'join' %}badge-info
+          {% else %}badge-warn{% endif %}">
+          <i class="ti ti-
+            {% if event.event_type == 'flag' %}alert-triangle
+            {% elif event.event_type == 'solve' %}check
+            {% elif event.event_type == 'join' %}user-plus
+            {% else %}file-description{% endif %}">
+          </i>
+        </div>
+        <div>
+          <div>{{ event.description }}</div>
+          <div class="activity-time">{{ event.timestamp|timesince }} ago</div>
+        </div>
+      </div>
+      {% empty %}
+      <p style="font-size:12px;color:var(--text-hint);padding:1rem 0;text-align:center">No recent activity.</p>
+      {% endfor %}
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Active nav highlight
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Uptime counter
+  const startTime = Date.now();
+  function updateUptime() {
+    const secs = Math.floor((Date.now() - startTime) / 1000);
+    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
+    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    document.getElementById('uptime-counter').textContent = h + ':' + m + ':' + s;
+  }
+  setInterval(updateUptime, 1000);
+  updateUptime();
+</script>
+
+</body>
+</html>
