@@ -8249,3 +8249,24 @@ Verification code sent to karl.satsat.7@gmail.com for signup
 "GET /static/img/favicon.ico HTTP/1.1" 304 0
 Verification code sent to karl.satsat20@gmail.com for signup
 "POST /send-verification-code/ HTTP/1.1" 200 54
+User created: C-2023-0507 (karl.satsat20@gmail.com)
+"POST /verify-code/ HTTP/1.1" 200 81
+"GET / HTTP/1.1" 200 23459
+"POST /login/ HTTP/1.1" 200 23961
+"POST /verify-code/ HTTP/1.1" 200 86
+"GET /StudentDashboard/ HTTP/1.1" 200 41586
+"GET /static/img/loadingIcon.webp HTTP/1.1" 200 42646
+"GET /static/img/PCodeLogo.svg HTTP/1.1" 304 0
+"GET /static/img/studenthaticon.png HTTP/1.1" 200 8381
+"GET /static/css/StudentDashboard.css HTTP/1.1" 200 15531
+"GET /static/js/StudentDashboard.js HTTP/1.1" 200 17118
+"GET /media/profile_pic/default.png HTTP/1.1" 200 298184
+"GET /api/student/total-exp/ HTTP/1.1" 200 83
+"GET /api/leaderboard-data/ HTTP/1.1" 200 110
+"GET /announcements/ HTTP/1.1" 200 33981
+"GET /static/css/announcement.css HTTP/1.1" 200 21490
+"GET /static/js/announcement.js HTTP/1.1" 200 41067
+"POST /logout/ HTTP/1.1" 302 0
+"GET / HTTP/1.1" 200 23927
+"GET /signup/ HTTP/1.1" 200 21833
+"GET /static/js/register.js HTTP/1.1" 304 0
