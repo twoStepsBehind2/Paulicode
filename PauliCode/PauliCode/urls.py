@@ -19,6 +19,9 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 
+# NOTE: The custom PauliCodeAdminSite instance and model registrations are
+# set up in User/admin.py (admin.site = PauliCodeAdminSite()). Creating a
+# second instance here would be empty and hide all models from /admin/.
 
 urlpatterns = [
    path('', include('User.urls')),

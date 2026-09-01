@@ -36,7 +36,7 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     'jazzmin',
-    'django.contrib.admin',
+    'User.admin_config.PauliCodeAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -82,12 +82,8 @@ WSGI_APPLICATION = 'PauliCode.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'djangoPauliCode',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -183,6 +179,10 @@ JAZZMIN_SETTINGS = {
     "site_brand": "PauliCode",
     "welcome_sign": "Welcome to the PauliCode Admin",
     "show_ui_builder": True,
+    "show_search": True,
+    "search_model": ["User.User", "User.Class"],
+    "show_sidebar": True,
+    "navigation_expanded": True,
 }
 
 JAZZMIN_UI_TWEAKS = {
